@@ -58,8 +58,7 @@ void setup() {
 }
 
 void loop() {
-  delay(100);
-  Serial.println("Ahoj Svete");
+  delay(500);
 
   syncTimeOnSerial();
 
@@ -84,10 +83,10 @@ void loop() {
       isPumpingWater = true;
     }
   }
-  
+
   showLastMeasurement(a0,a1,a2,a3);
   digitalClockLCD(start_time, 2);
-   
+
   if (isPumpingWater && isTimeToStopMotor()) {
     digitalWrite(MOTOR0, LOW);
     isPumpingWater = false;
@@ -211,8 +210,12 @@ void processSyncMessage() {
     if( pctime >= DEFAULT_TIME) { // check the integer is a valid time (greater than Jan 1 2013)
       setTime(pctime); // Sync Arduino clock to the time received on the serial port
     }
+    // say what you got:
+    Serial.print("I received: ");
+    Serial.println(pctime);
   }
 }
+
 
 time_t requestSync()
 {
@@ -248,3 +251,5 @@ void serveTheButtons() {
     digitalWrite(MOTOR3, LOW);
   }
 }
+
+
