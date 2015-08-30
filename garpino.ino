@@ -1,8 +1,10 @@
 #include <Time.h>
 #define TIME_MSG_LEN  11   // time sync to PC is HEADER followed by Unix time_t as ten ASCII digits
-#define TIME_HEADER  "T"   // Header tag for serial time sync message
+#define TIME_HEADER  'T'   // Header tag for serial time sync message
 #define TIME_REQUEST  7    // ASCII bell character requests a time sync message 
-
+#define COMMAND_HEADER 'C'
+#define COMMAND_START "START"
+#define COMMAND_STOP "STOP"
 
 //sensory analogowe, mierza wilgotnosc
 #define HUMIDITY_PIN3  A1
@@ -38,6 +40,11 @@ int a0, a1, a2, a3; //analog input humidity values
 
 boolean isPumpingWater = false;
 
+#define serialBufferSize 50
+char inputBuffer[serialBufferSize];
+int serialIndex = 0;
+
+
 void setup() {
   Serial.begin(57600);
   // set up the LCD's number of columns and rows: 
@@ -60,7 +67,10 @@ void setup() {
 void loop() {
   delay(500);
 
-  syncTimeOnSerial();
+  //processMessage();
+
+  //TODO: instead compose above with command processing:
+  if(checkSerial()) processCommand(inputBuffer); 
 
   if( isPumpingWater == false ) {
     serveTheButtons();
@@ -79,8 +89,7 @@ void loop() {
 
     if(isTooDry(a0)) {
       start_time = now();
-      digitalWrite(MOTOR0, HIGH); //put the water there
-      isPumpingWater = true;
+      motorStart(); 
     }
   }
 
@@ -88,11 +97,21 @@ void loop() {
   digitalClockLCD(start_time, 2);
 
   if (isPumpingWater && isTimeToStopMotor()) {
-    digitalWrite(MOTOR0, LOW);
-    isPumpingWater = false;
+    motorStop();  
   }
 
 }//end loop
+
+
+void motorStart() {
+  digitalWrite(MOTOR0, HIGH); //put the water there
+  isPumpingWater = true;
+}
+
+void motorStop() {
+  digitalWrite(MOTOR0, LOW);
+  isPumpingWater = false;
+}
 
 
 boolean isTooDry(int aHumidity) {
@@ -115,19 +134,6 @@ boolean isTimeToStopMotor() {
   return false;
 }
 
-
-void syncTimeOnSerial() {
-  if(Serial.available() ) {
-    processSyncMessage();
-  }
-  if(timeStatus() == timeNotSet) {
-    Serial.println("waiting for sync message");
-  }
-  else {     
-    digitalClockDisplay();  
-  }
-
-}
 
 void digitalClockLCD(time_t t, int row) {
   printLCDDigits(hour(t), 0, row);
@@ -201,20 +207,42 @@ void printLCDDigits(int value, int column, int row) {
 }
 
 
-void processSyncMessage() {
+//send on serial e.g. T1357041600
+/*void processMessage() {
   unsigned long pctime;
   const unsigned long DEFAULT_TIME = 1357041600; // Jan 1 2013
+  String command;
 
-  if(Serial.find(TIME_HEADER)) {
-    pctime = Serial.parseInt();
-    if( pctime >= DEFAULT_TIME) { // check the integer is a valid time (greater than Jan 1 2013)
-      setTime(pctime); // Sync Arduino clock to the time received on the serial port
-    }
-    // say what you got:
-    Serial.print("I received: ");
-    Serial.println(pctime);
+  if(Serial.available() ) {
+   
+   if(Serial.find(TIME_HEADER)) {
+   pctime = Serial.parseInt();
+   if( pctime >= DEFAULT_TIME) { // check the integer is a valid time (greater than Jan 1 2013)
+   setTime(pctime); // Sync Arduino clock to the time received on the serial port
+   }
+   // say what you got:
+   Serial.print("I received: ");
+   Serial.println(pctime);
+   } else if(Serial.find(COMMAND_HEADER)) {
+   Serial.println("Command");
+   command = Serial.readString();
+   if ( command == COMMAND_STOP ) {
+   motorStop();
+   Serial.println("Motor0 stop");
+   } 
+   else if( command == COMMAND_START ) {
+   motorStart();
+   Serial.println("Motor0 start");
+   }
+   }
+   }
+  if(timeStatus() == timeNotSet) {
+    Serial.println("waiting for sync message");
   }
-}
+  else {     
+    digitalClockDisplay();  
+  }
+}*/
 
 
 time_t requestSync()
@@ -251,5 +279,69 @@ void serveTheButtons() {
     digitalWrite(MOTOR3, LOW);
   }
 }
+
+void processCommand(char * commandBuffer) {
+  unsigned long pctime;
+  const unsigned long DEFAULT_TIME = 1357041600; // Jan 1 2013
+  String command;
+
+
+  if( commandBuffer[0] == TIME_HEADER) {
+    commandBuffer++;
+    Serial.println(commandBuffer);
+    pctime = (unsigned long) commandBuffer;
+      if( pctime >= DEFAULT_TIME) { // check the integer is a valid time (greater than Jan 1 2013)
+        setTime(pctime); // Sync Arduino clock to the time received on the serial port
+      }
+  } 
+  else if ( commandBuffer[0] == COMMAND_HEADER) {
+    commandBuffer++;
+    if ( strcmp(commandBuffer, "START") == 0 ) {
+      Serial.println("START");
+    } 
+    else if( strcmp(commandBuffer, "STOP") == 0 ) {
+      motorStop();
+      Serial.println("Motor STOP");
+    }
+  }
+  if(timeStatus() == timeNotSet) {
+    motorStart();
+    Serial.println("waiting for sync message");
+  }
+  else {     
+    digitalClockDisplay();  
+  }
+
+}
+
+boolean checkSerial() {
+  boolean isLineFound = false;
+  while(Serial.available() > 0 ) {
+    char charBuffer = Serial.read();
+    if(charBuffer == '\n') {
+      inputBuffer[serialIndex] = 0; //terminate the string
+      isLineFound = (serialIndex > 0 );
+      serialIndex = 0;
+    }
+    else if(charBuffer == '\r') {
+      //ignore it?
+    }
+    else if ( serialIndex < serialBufferSize && isLineFound == false) {
+      inputBuffer[serialIndex++] = charBuffer;
+    }
+
+  } 
+  return isLineFound;
+}
+
+
+
+
+
+
+
+
+
+
 
 
