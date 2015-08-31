@@ -34,7 +34,7 @@ time_t start_time = 0;
 #define HOURS_8 8//28800000 //default interval for measurements
 #define HUMIDITY_THRESHOLD 400
 static uint32_t measurmentInterval = 20;//28800;  in seconds!
-static uint32_t waterInterval = 5; //in seconds
+static uint32_t waterInterval = 30; //in seconds
 
 int a0, a1, a2, a3; //analog input humidity values
 
@@ -65,11 +65,8 @@ void setup() {
 }
 
 void loop() {
-  delay(500);
+  delay(100);
 
-  //processMessage();
-
-  //TODO: instead compose above with command processing:
   if(checkSerial()) processCommand(inputBuffer); 
 
   if( isPumpingWater == false ) {
@@ -88,7 +85,6 @@ void loop() {
 
 
     if(isTooDry(a0)) {
-      start_time = now();
       motorStart(); 
     }
   }
@@ -104,6 +100,7 @@ void loop() {
 
 
 void motorStart() {
+  start_time = now();
   digitalWrite(MOTOR0, HIGH); //put the water there
   isPumpingWater = true;
 }
@@ -206,52 +203,11 @@ void printLCDDigits(int value, int column, int row) {
   }
 }
 
-
-//send on serial e.g. T1357041600
-/*void processMessage() {
-  unsigned long pctime;
-  const unsigned long DEFAULT_TIME = 1357041600; // Jan 1 2013
-  String command;
-
-  if(Serial.available() ) {
-   
-   if(Serial.find(TIME_HEADER)) {
-   pctime = Serial.parseInt();
-   if( pctime >= DEFAULT_TIME) { // check the integer is a valid time (greater than Jan 1 2013)
-   setTime(pctime); // Sync Arduino clock to the time received on the serial port
-   }
-   // say what you got:
-   Serial.print("I received: ");
-   Serial.println(pctime);
-   } else if(Serial.find(COMMAND_HEADER)) {
-   Serial.println("Command");
-   command = Serial.readString();
-   if ( command == COMMAND_STOP ) {
-   motorStop();
-   Serial.println("Motor0 stop");
-   } 
-   else if( command == COMMAND_START ) {
-   motorStart();
-   Serial.println("Motor0 start");
-   }
-   }
-   }
-  if(timeStatus() == timeNotSet) {
-    Serial.println("waiting for sync message");
-  }
-  else {     
-    digitalClockDisplay();  
-  }
-}*/
-
-
 time_t requestSync()
 {
   Serial.write(TIME_REQUEST);  
   return 0; // the time will be sent later in response to serial mesg
 }
-
-
 
 void serveTheButtons() {
   if (digitalRead(BUTTON0)==LOW){
@@ -285,25 +241,6 @@ void processCommand(char * commandBuffer) {
   const unsigned long DEFAULT_TIME = 1357041600; // Jan 1 2013
   String command;
 
-
-  if( commandBuffer[0] == TIME_HEADER) {
-    commandBuffer++;
-    Serial.println(commandBuffer);
-    pctime = (unsigned long) commandBuffer;
-      if( pctime >= DEFAULT_TIME) { // check the integer is a valid time (greater than Jan 1 2013)
-        setTime(pctime); // Sync Arduino clock to the time received on the serial port
-      }
-  } 
-  else if ( commandBuffer[0] == COMMAND_HEADER) {
-    commandBuffer++;
-    if ( strcmp(commandBuffer, "START") == 0 ) {
-      Serial.println("START");
-    } 
-    else if( strcmp(commandBuffer, "STOP") == 0 ) {
-      motorStop();
-      Serial.println("Motor STOP");
-    }
-  }
   if(timeStatus() == timeNotSet) {
     motorStart();
     Serial.println("waiting for sync message");
@@ -312,6 +249,41 @@ void processCommand(char * commandBuffer) {
     digitalClockDisplay();  
   }
 
+  if( commandBuffer[0] == TIME_HEADER) {
+    commandBuffer++;
+    Serial.println(commandBuffer);
+    pctime = strtoul(commandBuffer,NULL,10);
+    if( pctime >= DEFAULT_TIME) { // check the integer is a valid time (greater than Jan 1 2013)
+      setTime(pctime); // Sync Arduino clock to the time received on the serial port
+    }
+  } 
+  else if ( commandBuffer[0] == COMMAND_HEADER) {
+    commandBuffer++;
+    if ( strcmp(commandBuffer, COMMAND_START) == 0 ) {
+      motorStart();
+      Serial.println("Motor STARTed");
+    } 
+    else if( strcmp(commandBuffer, COMMAND_STOP) == 0 ) {
+      motorStop();
+      Serial.println("Motor STOPed");
+    }
+    else if(strcmp(commandBuffer, "GIVEHUM") == 0) {
+      Serial.print(now()); 
+      Serial.print(';'); 
+      Serial.print(a0); 
+      Serial.print(';'); 
+      Serial.print(a1); 
+      Serial.print(';');
+      Serial.print(a2); 
+      Serial.print(';');
+      Serial.print(a3); 
+      Serial.print('\n');
+    }
+    else {
+      Serial.print("Unknown command: "); 
+      Serial.println(commandBuffer);
+    }
+  }
 }
 
 boolean checkSerial() {
@@ -333,6 +305,8 @@ boolean checkSerial() {
   } 
   return isLineFound;
 }
+
+
 
 
 
