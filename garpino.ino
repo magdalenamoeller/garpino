@@ -33,8 +33,8 @@ time_t start_time = 0;
 
 #define HOURS_8 8//28800000 //default interval for measurements
 #define HUMIDITY_THRESHOLD 400
-static uint32_t measurmentInterval = 20;//28800;  in seconds!
-static uint32_t waterInterval = 30; //in seconds
+static uint32_t measurmentInterval = 120;//28800;  in seconds!
+static uint32_t waterInterval = 20; //in seconds
 
 int a0, a1, a2, a3; //analog input humidity values
 
@@ -59,8 +59,8 @@ void setup() {
   pinMode(MOTOR2, OUTPUT);
   pinMode(MOTOR3, OUTPUT);
 
-  setSyncProvider( requestSync);  //set function to call when sync required
-  Serial.println("Waiting for sync message");
+  //setSyncProvider( requestSync);  //set function to call when sync required
+  //Serial.println("Waiting for sync message");
 
 }
 
@@ -242,16 +242,16 @@ void processCommand(char * commandBuffer) {
   String command;
 
   if(timeStatus() == timeNotSet) {
-    motorStart();
     Serial.println("waiting for sync message");
   }
   else {     
     digitalClockDisplay();  
   }
 
+  //Serial.println(commandBuffer);
+
   if( commandBuffer[0] == TIME_HEADER) {
     commandBuffer++;
-    Serial.println(commandBuffer);
     pctime = strtoul(commandBuffer,NULL,10);
     if( pctime >= DEFAULT_TIME) { // check the integer is a valid time (greater than Jan 1 2013)
       setTime(pctime); // Sync Arduino clock to the time received on the serial port
@@ -279,10 +279,10 @@ void processCommand(char * commandBuffer) {
       Serial.print(a3); 
       Serial.print('\n');
     }
-    else {
-      Serial.print("Unknown command: "); 
-      Serial.println(commandBuffer);
-    }
+  }
+  else {
+    Serial.print("Unknown command: "); 
+    Serial.println(commandBuffer);
   }
 }
 
@@ -305,6 +305,7 @@ boolean checkSerial() {
   } 
   return isLineFound;
 }
+
 
 
 
