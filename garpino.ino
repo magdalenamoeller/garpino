@@ -32,7 +32,7 @@ time_t measurement_time = 0;
 time_t start_time = 0;
 
 #define HOURS_8 8//28800000 //default interval for measurements
-#define HUMIDITY_THRESHOLD 400
+#define HUMIDITY_THRESHOLD 300
 static uint32_t measurmentInterval = 120;//28800;  in seconds!
 static uint32_t waterInterval = 20; //in seconds
 
@@ -241,12 +241,12 @@ void processCommand(char * commandBuffer) {
   const unsigned long DEFAULT_TIME = 1357041600; // Jan 1 2013
   String command;
 
-  if(timeStatus() == timeNotSet) {
+  if(timeStatus() == timeNotSet || now() < DEFAULT_TIME ) {
     Serial.println("waiting for sync message");
   }
-  else {     
-    digitalClockDisplay();  
-  }
+  //else {     
+    //digitalClockDisplay();  
+  //}
 
   //Serial.println(commandBuffer);
 
@@ -255,6 +255,9 @@ void processCommand(char * commandBuffer) {
     pctime = strtoul(commandBuffer,NULL,10);
     if( pctime >= DEFAULT_TIME) { // check the integer is a valid time (greater than Jan 1 2013)
       setTime(pctime); // Sync Arduino clock to the time received on the serial port
+      Serial.println("Time set");
+    } else {
+      Serial.println("waiting for sync message");
     }
   } 
   else if ( commandBuffer[0] == COMMAND_HEADER) {
