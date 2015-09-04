@@ -26,6 +26,8 @@
 
 #include <LiquidCrystal.h>
 
+const unsigned long DEFAULT_TIME = 1357041600; // Jan 1 2013
+
 LiquidCrystal lcd(13, 12, 11, 10, 9, 8);
 
 time_t measurement_time = 0;
@@ -46,6 +48,7 @@ int serialIndex = 0;
 
 
 void setup() {
+  setTime(DEFAULT_TIME);
   Serial.begin(57600);
   // set up the LCD's number of columns and rows: 
   lcd.begin(20, 4);
@@ -238,7 +241,6 @@ void serveTheButtons() {
 
 void processCommand(char * commandBuffer) {
   unsigned long pctime;
-  const unsigned long DEFAULT_TIME = 1357041600; // Jan 1 2013
   String command;
 
   if(timeStatus() == timeNotSet || now() < DEFAULT_TIME ) {
@@ -254,7 +256,7 @@ void processCommand(char * commandBuffer) {
     commandBuffer++;
     pctime = strtoul(commandBuffer,NULL,10);
     if( pctime >= DEFAULT_TIME) { // check the integer is a valid time (greater than Jan 1 2013)
-      setTime(pctime); // Sync Arduino clock to the time received on the serial port
+      //setTime(pctime); // Sync Arduino clock to the time received on the serial port
       Serial.println("Time set");
     } else {
       Serial.println("waiting for sync message");

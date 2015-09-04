@@ -2,13 +2,15 @@
 import serial
 import syslog
 import time
+import urllib2
+
 
 #The following line is for serial over GPIO
 port = '/dev/ttyUSB0'
-
+baseURL = 'https://api.thingspeak.com/update?api_key=NLPQVVN8W0P48X42'
 
 ard = serial.Serial(port,57600,timeout=5)
-time.sleep(2) #seconds
+time.sleep(4) #seconds
 
 #!
 millis = int(round(time.time() * 1000))
@@ -17,7 +19,7 @@ msg = 'T' + str(millis) + '\n'
 while (1):
     # Serial write section
 
-    ard.flush()
+    #ard.flush()
 
     #ard.write('CSTART\n')
     #time.sleep(4)
@@ -28,7 +30,7 @@ while (1):
     ard.write(msg)
 
 
-    time.sleep(1) #seconds
+    time.sleep(4) #seconds
 
     # Serial read section
     response = ard.readline()
@@ -47,6 +49,10 @@ while (1):
         #parse values and send over network
  	msg = 'CGIVEHUM\n'
         print response
+	humidity = response.split(';')[1:4]
+	print humidity
+	f = urllib2.urlopen(baseURL + "&field1=%s&field2=%s&field3=%s" % humidity)
+	f.close()
     else:
         msg = 'CGIVEHUM\n'
         print 'Unexpected response:'
