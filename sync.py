@@ -3,6 +3,7 @@ import serial
 import syslog
 import time
 import urllib2
+import datetime
 
 
 #The following line is for serial over GPIO
@@ -13,8 +14,9 @@ ard = serial.Serial(port,57600,timeout=5)
 time.sleep(4) #seconds
 
 #!
-millis = int(round(time.time() * 1000))
-msg = 'T' + str(millis) + '\n'
+seconds = int(round(time.time()))
+#seconds = datetime.datetime.now() //TODO: localtime instead of utc
+msg = 'T' + str(seconds) + '\n'
 
 while (1):
     # Serial write section

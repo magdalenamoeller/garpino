@@ -13,6 +13,5 @@ try:
     arduino.write('CSTART\n')    
     time.sleep(1)  
     print arduino.readline()  
-    print arduino.readline()  
 except:    
     print "Failed to send!"  

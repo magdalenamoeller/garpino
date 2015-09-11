@@ -256,7 +256,7 @@ void processCommand(char * commandBuffer) {
     commandBuffer++;
     pctime = strtoul(commandBuffer,NULL,10);
     if( pctime >= DEFAULT_TIME) { // check the integer is a valid time (greater than Jan 1 2013)
-      //setTime(pctime); // Sync Arduino clock to the time received on the serial port
+      setTime(pctime); // Sync Arduino clock to the time received on the serial port
       Serial.println("Time set");
     } else {
       Serial.println("waiting for sync message");
