@@ -38,7 +38,7 @@ time_t display_time = 0;
 #define HUMIDITY_THRESHOLD 300 // abov is to dry or the opotiste?
 static uint32_t measurmentInterval = 5;//28800;  in seconds!
 static uint32_t waterInterval = 20; //in seconds
-static uint32_t DisplayInterval = 1; //in seconds
+static uint32_t displayInterval = 1; //in seconds
 
 int a0, a1, a2, a3; //analog input humidity values
 
@@ -82,7 +82,7 @@ void loop() {
   time_t now_t = now();
   digitalClockLCD(now_t, 0);
 
-  if(isTimeToMeasure()) {
+  if(isTimeTo(&measurement_time, measurmentInterval)) {
     a0 = analogRead(HUMIDITY_PIN0);
     a1 = analogRead(HUMIDITY_PIN1);
     a2 = analogRead(HUMIDITY_PIN2);
@@ -94,7 +94,7 @@ void loop() {
     }
   }
 
-  if( isTimeTo(&display_time, DisplayInterval)) {
+  if( isTimeTo(&display_time, displayInterval)) {
     lcd.clear();
     showLastMeasurement(a0,a1,a2,a3);
     digitalClockLCD(start_time, 2);
@@ -163,17 +163,6 @@ void showLastMeasurement(int a0, int a1, int a2,int a3) {
   lcd.setCursor(16,1);
   lcd.print(a3); 
 
-}
-
-
-boolean isTimeToMeasure() {
-  time_t time_now = now(); 
-
-  if( time_now >  (measurement_time + measurmentInterval) ) { //all in seconds
-    measurement_time = time_now;
-    return true;
-  }
-  return false;
 }
 
 
