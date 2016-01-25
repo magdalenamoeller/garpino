@@ -32,11 +32,13 @@ LiquidCrystal lcd(13, 12, 11, 10, 9, 8);
 
 time_t measurement_time = 0;
 time_t start_time = 0;
+time_t display_time = 0;
 
 #define HOURS_8 8//28800000 //default interval for measurements
-#define HUMIDITY_THRESHOLD 300
-static uint32_t measurmentInterval = 120;//28800;  in seconds!
+#define HUMIDITY_THRESHOLD 300 // abov is to dry or the opotiste?
+static uint32_t measurmentInterval = 5;//28800;  in seconds!
 static uint32_t waterInterval = 20; //in seconds
+static uint32_t DisplayInterval = 1; //in seconds
 
 int a0, a1, a2, a3; //analog input humidity values
 
@@ -76,7 +78,7 @@ void loop() {
     serveTheButtons();
   }
 
-  lcd.clear();
+  
   time_t now_t = now();
   digitalClockLCD(now_t, 0);
 
@@ -92,9 +94,12 @@ void loop() {
     }
   }
 
-  showLastMeasurement(a0,a1,a2,a3);
-  digitalClockLCD(start_time, 2);
-
+  if( isTimeTo(&display_time, DisplayInterval)) {
+    lcd.clear();
+    showLastMeasurement(a0,a1,a2,a3);
+    digitalClockLCD(start_time, 2);
+  }
+  
   if (isPumpingWater && isTimeToStopMotor()) {
     motorStop();  
   }
@@ -166,6 +171,17 @@ boolean isTimeToMeasure() {
 
   if( time_now >  (measurement_time + measurmentInterval) ) { //all in seconds
     measurement_time = time_now;
+    return true;
+  }
+  return false;
+}
+
+
+boolean isTimeTo(time_t* last_time, uint32_t intervalTime) {
+  time_t time_now = now(); 
+
+  if( time_now >  (*last_time + measurmentInterval) ) { //all in seconds
+    *last_time = time_now;
     return true;
   }
   return false;
@@ -256,7 +272,7 @@ void processCommand(char * commandBuffer) {
     commandBuffer++;
     pctime = strtoul(commandBuffer,NULL,10);
     if( pctime >= DEFAULT_TIME) { // check the integer is a valid time (greater than Jan 1 2013)
-      //setTime(pctime); // Sync Arduino clock to the time received on the serial port
+      setTime(pctime); // Sync Arduino clock to the time received on the serial port
       Serial.println("Time set");
     } else {
       Serial.println("waiting for sync message");
