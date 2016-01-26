@@ -31,14 +31,16 @@ const unsigned long DEFAULT_TIME = 1357041600; // Jan 1 2013
 LiquidCrystal lcd(13, 12, 11, 10, 9, 8);
 
 time_t measurement_time = 0;
-time_t start_time = 0;
+time_t water_time = 0;
 time_t display_time = 0;
+time_t pumping_time = 0;
 
 #define HOURS_8 8//28800000 //default interval for measurements
-#define HUMIDITY_THRESHOLD 300 // abov is to dry or the opotiste?
+#define HUMIDITY_THRESHOLD 300 // below is to dry
 static uint32_t measurmentInterval = 5;//28800;  in seconds!
-static uint32_t waterInterval = 20; //in seconds
+static uint32_t waterInterval = 20; //in seconds, how long to pump water
 static uint32_t displayInterval = 1; //in seconds
+static uint32_t pumpingInterval = 3600; //how long to wait to next pumping, in seconds 60*60*12=43200
 
 int a0, a1, a2, a3; //analog input humidity values
 
@@ -63,10 +65,6 @@ void setup() {
   pinMode(MOTOR1, OUTPUT);
   pinMode(MOTOR2, OUTPUT);
   pinMode(MOTOR3, OUTPUT);
-
-  //setSyncProvider( requestSync);  //set function to call when sync required
-  //Serial.println("Waiting for sync message");
-
 }
 
 void loop() {
@@ -77,7 +75,6 @@ void loop() {
   if( isPumpingWater == false ) {
     serveTheButtons();
   }
-
   
   time_t now_t = now();
   digitalClockLCD(now_t, 0);
@@ -86,21 +83,21 @@ void loop() {
     a0 = analogRead(HUMIDITY_PIN0);
     a1 = analogRead(HUMIDITY_PIN1);
     a2 = analogRead(HUMIDITY_PIN2);
-    a3 = analogRead(HUMIDITY_PIN3); 
-
-
-    if(isTooDry(a0)) {
-      motorStart(); 
-    }
+    a3 = analogRead(HUMIDITY_PIN3);
   }
 
   if( isTimeTo(&display_time, displayInterval)) {
     lcd.clear();
     showLastMeasurement(a0,a1,a2,a3);
-    digitalClockLCD(start_time, 2);
+    digitalClockLCD(water_time, 2);
   }
   
-  if (isPumpingWater && isTimeToStopMotor()) {
+  
+  if(isTooDry(a0) && isTimeTo(&pumping_time, pumpingInterval)) { //put the water not more often then pumpingInterval
+      motorStart(); 
+  }
+    
+  if (isPumpingWater && isTimeTo(&water_time, waterInterval)) { //put the water minimum the waterInterval
     motorStop();  
   }
 
@@ -108,7 +105,7 @@ void loop() {
 
 
 void motorStart() {
-  start_time = now();
+  water_time = now();
   digitalWrite(MOTOR0, HIGH); //put the water there
   isPumpingWater = true;
 }
@@ -128,12 +125,11 @@ boolean isTooDry(int aHumidity) {
   }
 }
 
-boolean isTimeToStopMotor() {
-  //lcd.setCursor(0,2);  lcd.print(measurement_time + measurmentInterval);
-  //lcd.setCursor(0,3);  lcd.print(time_now);
+boolean isTimeTo(time_t* last_time, uint32_t intervalTime) {
   time_t time_now = now(); 
 
-  if( time_now >  (start_time + waterInterval) ) { //all in seconds
+  if( time_now >  (*last_time + intervalTime) ) { //all in seconds
+    *last_time = time_now;
     return true;
   }
   return false;
@@ -162,18 +158,6 @@ void showLastMeasurement(int a0, int a1, int a2,int a3) {
   lcd.print(a2); 
   lcd.setCursor(16,1);
   lcd.print(a3); 
-
-}
-
-
-boolean isTimeTo(time_t* last_time, uint32_t intervalTime) {
-  time_t time_now = now(); 
-
-  if( time_now >  (*last_time + measurmentInterval) ) { //all in seconds
-    *last_time = time_now;
-    return true;
-  }
-  return false;
 }
 
 void digitalClockDisplay(){
@@ -251,11 +235,6 @@ void processCommand(char * commandBuffer) {
   if(timeStatus() == timeNotSet || now() < DEFAULT_TIME ) {
     Serial.println("waiting for sync message");
   }
-  //else {     
-    //digitalClockDisplay();  
-  //}
-
-  //Serial.println(commandBuffer);
 
   if( commandBuffer[0] == TIME_HEADER) {
     commandBuffer++;
