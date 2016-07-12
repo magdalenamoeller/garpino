@@ -3,7 +3,7 @@ import serial
 import time
 import subprocess
 
-COL = 2 # display graph for COL sensor
+COL = 1 # display graph for COL sensor
 try:  
     arduino = serial.Serial('/dev/ttyUSB0', 57600)  
 except:  
@@ -14,7 +14,7 @@ time.sleep(2) #seconds
 garpinof = open('garpinof.dat', 'w')
 
 i = 0;
-while i < 4:
+while i < 100:
   try:    
     arduino.write('CGIVEHUM\n')    
     time.sleep(1)  

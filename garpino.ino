@@ -68,7 +68,7 @@ void setup() {
 }
 
 void loop() {
-  delay(100);
+  delay(10);
 
   if(checkSerial()) processCommand(inputBuffer); 
 
@@ -94,24 +94,24 @@ void loop() {
   
   
   if(isTooDry(a0) && isTimeTo(&pumping_time, pumpingInterval)) { //put the water not more often then pumpingInterval
-      motorStart(); 
+      motorStart((int)MOTOR0); 
   }
     
   if (isPumpingWater && isTimeTo(&water_time, waterInterval)) { //put the water minimum the waterInterval
-    motorStop();  
+    motorStop((int)MOTOR0);  
   }
 
 }//end loop
 
 
-void motorStart() {
+void motorStart(int motor_nr) {
   water_time = now();
-  digitalWrite(MOTOR0, HIGH); //put the water there
+  digitalWrite(motor_nr, HIGH); //put the water there
   isPumpingWater = true;
 }
 
-void motorStop() {
-  digitalWrite(MOTOR0, LOW);
+void motorStop(int motor_nr) {
+  digitalWrite(motor_nr, LOW);
   isPumpingWater = false;
 }
 
@@ -203,9 +203,11 @@ time_t requestSync()
 
 void serveTheButtons() {
   if (digitalRead(BUTTON0)==LOW){
+    //motorStart();//
     digitalWrite(MOTOR0, HIGH);
   }
   else{
+    //motorStop();//
     digitalWrite(MOTOR0, LOW);
   }
   if (digitalRead(BUTTON1)==LOW){
@@ -249,11 +251,11 @@ void processCommand(char * commandBuffer) {
   else if ( commandBuffer[0] == COMMAND_HEADER) {
     commandBuffer++;
     if ( strcmp(commandBuffer, COMMAND_START) == 0 ) {
-      motorStart();
+      motorStart((int)MOTOR0);
       Serial.println("Motor STARTed");
     } 
     else if( strcmp(commandBuffer, COMMAND_STOP) == 0 ) {
-      motorStop();
+      motorStop((int)MOTOR0);
       Serial.println("Motor STOPed");
     }
     else if(strcmp(commandBuffer, "GIVEHUM") == 0) {
