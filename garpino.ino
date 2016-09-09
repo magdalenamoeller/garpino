@@ -93,12 +93,18 @@ void loop() {
   }
   
   
-  if(isTooDry(a0) && isTimeTo(&pumping_time, pumpingInterval)) { //put the water not more often then pumpingInterval
+  if((isTooDry(a0)) && isTimeTo(&pumping_time, pumpingInterval)) { //put the water not more often then pumpingInterval
       motorStart((int)MOTOR0); 
+      //motorStart((int)MOTOR1); 
+      //motorStart((int)MOTOR2); 
+      //motorStart((int)MOTOR3); 
   }
     
   if (isPumpingWater && isTimeTo(&water_time, waterInterval)) { //put the water minimum the waterInterval
-    motorStop((int)MOTOR0);  
+    motorStop((int)MOTOR0); 
+    //motorStop((int)MOTOR0);
+    //motorStop((int)MOTOR0);
+    //motorStop((int)MOTOR0); 
   }
 
 }//end loop
